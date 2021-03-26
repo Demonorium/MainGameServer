@@ -52,7 +52,7 @@ namespace demonorium
 		const T* reference = static_cast<T*>(m_io_pos);
 
 		m_io_offset += count*sizeof(T);
-		m_memory = reinterpret_cast<void*>(reinterpret_cast<size_t>(m_memory) + count*sizeof(T));
+		m_io_pos = reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + count*sizeof(T));
 		
 		return reference;
 	}
@@ -66,8 +66,8 @@ namespace demonorium
 	void Packet::write(const T* object, size_t count) {
 		assert(enoughMemory<T>(count));
 		m_io_offset += count * sizeof(T);
-		std::memcpy(m_memory, &object, sizeof(T) * count);
-		m_memory =  reinterpret_cast<void*>(reinterpret_cast<size_t>(m_memory) + count * sizeof(T));
+		std::memcpy(m_io_pos, &object, sizeof(T) * count);
+		m_memory =  reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + count * sizeof(T));
 	}
 
 	template <class T>
@@ -130,8 +130,13 @@ namespace demonorium
 	}
 
 	inline const void* Packet::read(size_t len) {
-		void* t = m_io_pos;
-		return t;
+		assert((m_io_offset + len) <= m_size);
+		const void* reference = m_io_pos;
+
+		m_io_offset += len;
+		m_io_pos = reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + len);
+
+		return reference;
 	}
 
 	inline size_t Packet::availableSpace() const {
