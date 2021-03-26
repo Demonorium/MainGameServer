@@ -70,7 +70,7 @@ namespace demonorium
 	template <class T, class ... Args>
 	void Server::send(Packet& pack, sf::IpAddress address, sf::Uint16 port, const T& a, Args&&... args) {
 		pack.write(a);
-		send(pack, address, port, a, std::forward<Args>(args)...);
+		send(pack, address, port, std::forward<Args>(args)...);
 	}
 
 	inline void Server::send(Packet& pack, sf::IpAddress address, sf::Uint16 port) {

@@ -67,7 +67,7 @@ namespace demonorium
 		assert(enoughMemory<T>(count));
 		m_io_offset += count * sizeof(T);
 		std::memcpy(m_io_pos, &object, sizeof(T) * count);
-		m_memory =  reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + count * sizeof(T));
+		m_io_pos =  reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + count * sizeof(T));
 	}
 
 	template <class T>
