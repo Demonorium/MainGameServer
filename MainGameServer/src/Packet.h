@@ -30,6 +30,8 @@ namespace demonorium
 
 		const void* read(size_t len = 0);
 		
+		void write(sf::IpAddress address);
+		
 		template<class T>
 		void write(const T& object);
 
@@ -62,12 +64,13 @@ namespace demonorium
 		write(&object);
 	}
 
+	
 	template <class T>
 	void Packet::write(const T* object, size_t count) {
 		assert(enoughMemory<T>(count));
 		m_io_offset += count * sizeof(T);
-		std::memcpy(m_io_pos, &object, sizeof(T) * count);
-		m_io_pos =  reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + count * sizeof(T));
+		std::memcpy(m_io_pos, object, sizeof(T) * count);
+		m_io_pos = reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + count * sizeof(T));
 	}
 
 	template <class T>
@@ -137,6 +140,19 @@ namespace demonorium
 		m_io_pos = reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + len);
 
 		return reference;
+	}
+	namespace
+	{
+		template<size_t size>
+		using byteArray = byte[size];
+	}
+	inline void Packet::write(sf::IpAddress address) {
+		const auto toNumber          = address.toInteger();
+		byteArray<4>& arr = (byteArray<4>&)toNumber;
+		write(arr[3]);
+		write(arr[2]);
+		write(arr[1]);
+		write(arr[0]);
 	}
 
 	inline size_t Packet::availableSpace() const {

@@ -10,7 +10,9 @@
 namespace demonorium
 {
 	class ServerAPI {
+		friend class Server;
 		static Server server;
+	
 	public:
 		static void init();
 		
@@ -26,12 +28,12 @@ namespace demonorium
 		
 		static void terminate();
 		static const auto& getPlayerList();
+		static bool is_launched();
 	};
 
 
-
-	
 	inline void ServerAPI::init() {
+		server.m_launched.store(false);
 		server.start();
 	}
 
@@ -71,5 +73,9 @@ namespace demonorium
 
 	inline const auto& ServerAPI::getPlayerList() {
 		return server.m_players;
+	}
+
+	inline bool ServerAPI::is_launched() {
+		return server.m_launched.load();
 	}
 }

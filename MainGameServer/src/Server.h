@@ -7,6 +7,7 @@
 #include "Player.h"
 
 #include "Packet.h"
+#include "ServerAPI.h"
 
 namespace demonorium
 {
@@ -23,6 +24,7 @@ namespace demonorium
 		char m_password[9];
 		bool m_need_restart;
 		bool m_internal_restart;
+		std::atomic<bool> m_launched;
 		
 		template<class T>
 		static void read_from_packet(void*& packet, PacketPrefix& prefix, T& target);
@@ -72,8 +74,20 @@ namespace demonorium
 		pack.write(a);
 		send(pack, address, port, std::forward<Args>(args)...);
 	}
-
+	
+	void Server::onInit() {
+		m_input_thread.start();
+		m_output.bind(sf::Socket::AnyPort);
+		std::cout << "Отправка с порта: " << m_output.getLocalPort() << std::endl;
+		m_launched.store(true);
+	}
+	
 	inline void Server::send(Packet& pack, sf::IpAddress address, sf::Uint16 port) {
+		std::cout << "Send: '";
+		for (int i = 0; i < pack.size(); ++i)
+			std::cout << (size_t)((byte*)pack.data())[i] << ' ';
+		std::cout << "' to " << address << ":" << port << std::endl;
+		
 		m_output.send(pack.data(), pack.size(), address, port);
 	}
 
@@ -89,12 +103,6 @@ namespace demonorium
 		m_input_thread(port, 255, 128), m_game_started(false),
 		m_need_restart(false), m_internal_restart(false) {
 		std::memcpy(m_password, password, 9);
-	}
-
-
-	inline void Server::onInit() {
-		m_input_thread.start();
-		m_output.bind(sf::Socket::AnyPort);
 	}
 
 	inline void Server::onPause() {
@@ -182,16 +190,15 @@ namespace demonorium
 						break;
 					case 3:
 						if (m_game_started && iterator->second.alive()) {
-							if (4 <= prefix.size) {
+							if (pack.enoughMemory<byte>(4)) {
 								Packet packet(5);
-								pack.write(3);
-								pack.write(iterator->first.toInteger());
+								packet.write(static_cast<byte>(3));
+								packet.write(iterator->first);
 								
 								int alive_counter = 0;
 								for (const auto& bundle : m_players) {
 									if (bundle.second.alive()) {
-										
-										m_output.send(pack.data(), pack.size(), bundle.first, bundle.second.getPort());
+										send(packet, bundle.first, bundle.second.getPort());
 										++alive_counter;
 									}
 								}
@@ -228,12 +235,12 @@ namespace demonorium
 						
 						for (const auto& bundle : m_players) {
 							if (bundle.second.alive() && bundle.second.isReady()) {
-								packet.write(bundle.first.toInteger());
+								packet.write(bundle.first);
 								++fcount;
 							}
 						}
 						static_cast<byte*>(packet.data())[1] = fcount;
-						m_output.send(packet.data(), packet.size(), iterator->first, iterator->second.getPort());
+						send(packet, iterator->first, iterator->second.getPort());
 					}
 					break;
 
