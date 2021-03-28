@@ -116,9 +116,14 @@ namespace demonorium
 			if (pack.enoughMemory<byte>()) {
 				byte code = *pack.read<byte>();
 
+				
 				//BODY
 				auto iterator = m_players.find(prefix.ip);
 				if (iterator == m_players.end()) {
+					std::cout << "Получен запрос от неизвестного пользователя: " << code << '\n';
+					std::cout << '\t' << prefix.ip << std::endl;
+
+					
 					if (!m_game_started && (code == 0) && (pack.enoughMemoryMany<sf::Uint16>(8u))) {
 						char pas[8];
 						const char* pas_raw = pack.read<char>(8);
@@ -130,6 +135,8 @@ namespace demonorium
 							std::string name(pack.read<char>(size), size);
 							m_players.insert(iterator, std::make_pair(prefix.ip, Player(send_port, std::move(name))));
 						}
+					} else {
+						std::cout << "Ошибка. Недостаточный размер пакета запроса\n" << std::endl;
 					}
 				}
 				else {
@@ -242,8 +249,10 @@ namespace demonorium
 		
 		if (m_need_restart) {
 			m_internal_restart = true;
-			for (auto& player : m_players)
+			for (auto& player : m_players) {
 				player.second.gameReset();
+				send(player.first, player.second.getPort(), 0);
+			}
 			m_game_started = false;
 			m_need_restart = false;
 		} else if (nopack)
