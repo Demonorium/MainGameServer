@@ -128,7 +128,7 @@ namespace demonorium
 							const size_t size              = pack.availableSpace();
 							std::string name(pack.read<char>(size), size);
 							m_players.insert(iterator, std::make_pair(prefix.ip, Player(send_port, std::move(name))));
-							send(prefix.ip, send_port, 5, prefix.ip);
+							send(prefix.ip, send_port, 4, prefix.ip);
 						}
 					} else {
 						std::cout << "Ошибка. Недостаточный размер пакета запроса\n" << std::endl;
@@ -149,7 +149,7 @@ namespace demonorium
 								std::cout << "Перерегистрация: " << iterator->second.getName() << " -> " << name << '\n';
 								iterator->second.setPort(send_port);
 								iterator->second.setName(std::move(name));
-								send(iterator->first, iterator->second.getPort(), 5, iterator->first);
+								send(iterator->first, iterator->second.getPort(), 4, iterator->first);
 							}
 						}
 						break;
