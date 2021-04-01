@@ -8,7 +8,6 @@
 
 #include "Packet.h"
 #include "ServerAPI.h"
-
 namespace demonorium
 {
 	class Server : public BaseThread {
@@ -25,13 +24,11 @@ namespace demonorium
 		bool m_need_restart;
 		bool m_internal_restart;
 		std::atomic<bool> m_launched;
+
 		
-		template<class T>
-		static void read_from_packet(void*& packet, PacketPrefix& prefix, T& target);
-		template<class T>
-		static bool enough_memory(const PacketPrefix& prefix);
 		bool isValidPassword(const char pas[8]) const;
 
+		//Отправить данные на ip и port 
 		template<class ... Args>
 		void send(sf::IpAddress address, sf::Uint16 port, byte code, Args&& ...);
 		template<class T, class ... Args>
@@ -49,19 +46,6 @@ namespace demonorium
 		void restartGame();
 		void forceRestart();
 	};
-
-
-	template <class T>
-	void Server::read_from_packet(void*& packet, PacketPrefix& prefix, T& target) {
-		target = *static_cast<char*>(packet);
-		packet = memory_shift(packet, sizeof(T));
-		prefix.size -= sizeof(T);
-	}
-
-	template <class T>
-	bool Server::enough_memory(const PacketPrefix& prefix) {
-		return prefix.size >= sizeof(T);
-	}
 
 	template <class ... Args>
 	void Server::send(sf::IpAddress address, sf::Uint16 port, byte code, Args&&... args) {
@@ -85,7 +69,7 @@ namespace demonorium
 	inline void Server::send(Packet& pack, sf::IpAddress address, sf::Uint16 port) {
 		std::cout << "Send: '";
 		for (int i = 0; i < pack.size(); ++i)
-			std::cout << (size_t)((byte*)pack.data())[i] << ' ';
+			std::cout << static_cast<size_t>(static_cast<byte*>(pack.data())[i]) << ' ';
 		std::cout << "' to " << address << ":" << port << std::endl;
 		
 		m_output.send(pack.data(), pack.size(), address, port);
@@ -111,18 +95,20 @@ namespace demonorium
 	}
 
 	inline void Server::onFrame() {
-		void* packet = m_input_thread.get();
+		void* received_memory = m_input_thread.get();
 
 		bool nopack = false;
-		if (packet != nullptr) {
-			//PREFIX
-			PacketPrefix prefix = *static_cast<PacketPrefix*>(packet);
-			packet = memory_shift(packet, sizeof(PacketPrefix));
-			Packet pack(packet, prefix.size);
+		if (received_memory != nullptr) {
+			//Cчитывание пакета из буффера и создание вспомогательного объекта
+			PacketPrefix prefix = *static_cast<PacketPrefix*>(received_memory);
+			received_memory = memory_shift(received_memory, sizeof(PacketPrefix));
+			Packet pack(received_memory, prefix.size);
 
 			
+			
+			//Если этот пакет соотвествует стилю пакетов, тогда обрабатываем
 			if (pack.enoughMemory<byte>()) {
-				byte code = *pack.read<byte>();
+				const byte code = *pack.read<byte>();
 
 				
 				//BODY
@@ -142,6 +128,7 @@ namespace demonorium
 							const size_t size              = pack.availableSpace();
 							std::string name(pack.read<char>(size), size);
 							m_players.insert(iterator, std::make_pair(prefix.ip, Player(send_port, std::move(name))));
+							send(prefix.ip, send_port, 5, iterator->first);
 						}
 					} else {
 						std::cout << "Ошибка. Недостаточный размер пакета запроса\n" << std::endl;
@@ -159,7 +146,9 @@ namespace demonorium
 								const unsigned short send_port = *pack.read<sf::Uint16>();
 								const size_t size = pack.availableSpace();
 								std::string name(pack.read<char>(size), size);
-								m_players.insert(iterator, std::make_pair(prefix.ip, Player(send_port, std::move(name))));
+								std::cout << "Перерегистрация: " << iterator->second.getName() << " -> " << name << '\n';
+								iterator->second.setName(std::move(name));
+								send(iterator->first, iterator->second.getPort(), 5, iterator->first);
 							}
 						}
 						break;

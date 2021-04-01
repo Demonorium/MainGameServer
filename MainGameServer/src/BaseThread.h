@@ -5,6 +5,9 @@
 
 namespace demonorium
 {
+	/**
+	 * \brief Надстройка над std::thread
+	 */
 	class BaseThread {
 		static void runThread(BaseThread* thread);
 		std::atomic<bool> m_deconstruction;
@@ -15,18 +18,18 @@ namespace demonorium
 		std::mutex m_thread_mutex;
 		std::condition_variable m_cv;
 		
-		virtual void onInit() = 0;
-		virtual void onFrame() = 0;
-		virtual void onPause();
-		virtual void onUnPause();
-		virtual void onDestruction();
+		virtual void onInit() = 0;	//вызывается до цикла потока
+		virtual void onFrame() = 0;	//вызывается в цикле потока
+		virtual void onPause();		//Вызывается после pause(), если не вызвана destroyThread()
+		virtual void onUnPause();	//Вызывается после run(), если не вызвана destroyThread()
+		virtual void onDestruction(); //Вызывается перед остановкой потока
 		
 		bool isRealyPaused() const;
 	public:
 		BaseThread();
 		virtual ~BaseThread();
 
-		void loop();
+		void loop();	//Цикл потока
 		void start();	//Запуск потока
 		void destroyThread(); //Полная остановка и уничтожение объекта потока, если он создан
 		
@@ -34,7 +37,7 @@ namespace demonorium
 		void run(); //Продолжить выполнение потока, орём на поток notify пока не услышит
 
 		bool isRunning() const;	//Поток сейчас выполняется?
-		bool containsThread() const; //Содержит в себе инфу?
+		bool containsThread() const; //Содержит в себе созданный поток?
 		
 	};
 

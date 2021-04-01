@@ -6,7 +6,12 @@
 
 
 namespace demonorium
-{	
+{
+	
+	/**
+	 * \brief Класс предназначен для представления отправляемых и получаемых данных, умеет читать данные разных типов
+	 * Имеется перегрузка для sf::IpAddress
+	 */
 	class Packet {
 		void* m_memory;
 		bool m_control;
@@ -15,35 +20,49 @@ namespace demonorium
 		void* m_io_pos;
 		size_t m_io_offset;
 	public:
+		//Конструирует пакет на основе данных, пакет содержит УКАЗАТЕЛЬ на эти данные И НЕУПРАВЛЯЕТ их жизнью
 		Packet(void* received, size_t size);
+		//Конструирует пакет с хранилищем данных заданного размера. Хранилище разрушается при разрушении пакета
 		Packet(size_t size);
 		~Packet();
-		
+
+		//Указатель на начало хранилища
 		void* data();
+		//Размер хранилища
 		size_t rawSize();
+		// Количество считанных или записанных данных
 		size_t size() const;
-		
+
+		//Сброс состояния чтения/записи
 		void resetIO();
 
+		//Считать массив размера count
 		template<class T>
 		const T* read(size_t count = 1);
 
+		//Считать сырую память размера len
 		const void* read(size_t len = 0);
-		
+
+		//Записать адресс в порядке 1 2 3 4 байты
 		void write(sf::IpAddress address);
-		
+
+		//Записать объект
 		template<class T>
 		void write(const T& object);
 
+		//Записать массив объектов
 		template<class T>
 		void write(const T* object, size_t count = 1);
-		
+
+		//Достаточно ли памяти для размещения массива объектов
 		template<class T>
 		bool enoughMemory(size_t count = 1) const;
 
+		//Достаточно ли памяти для размещения последовательности объектов.
 		template<class T, class ... Args>
 		bool enoughMemoryMany(size_t current = 0) const;
 
+		//Свободное место в пакете
 		size_t availableSpace() const;
 	};
 
@@ -147,8 +166,8 @@ namespace demonorium
 		using byteArray = byte[size];
 	}
 	inline void Packet::write(sf::IpAddress address) {
-		const auto toNumber          = address.toInteger();
-		byteArray<4>& arr = (byteArray<4>&)toNumber;
+		const auto toNumber = address.toInteger();
+		const auto& arr           = reinterpret_cast<const byteArray<4>&>(toNumber);
 		write(arr[3]);
 		write(arr[2]);
 		write(arr[1]);
