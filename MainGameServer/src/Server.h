@@ -147,6 +147,7 @@ namespace demonorium
 								const size_t size = pack.availableSpace();
 								std::string name(pack.read<char>(size), size);
 								std::cout << "Перерегистрация: " << iterator->second.getName() << " -> " << name << '\n';
+								iterator->second.setPort(send_port);
 								iterator->second.setName(std::move(name));
 								send(iterator->first, iterator->second.getPort(), 5, iterator->first);
 							}
