@@ -128,7 +128,7 @@ namespace demonorium
 							const size_t size              = pack.availableSpace();
 							std::string name(pack.read<char>(size), size);
 							m_players.insert(iterator, std::make_pair(prefix.ip, Player(send_port, std::move(name))));
-							send(prefix.ip, send_port, 5, iterator->first);
+							send(prefix.ip, send_port, 5, prefix.ip);
 						}
 					} else {
 						std::cout << "Ошибка. Недостаточный размер пакета запроса\n" << std::endl;
@@ -136,7 +136,7 @@ namespace demonorium
 				}
 				else {
 					switch (code) {
-					case 0:
+					case 0: //Перерегистрация
 						if (!m_game_started && (pack.enoughMemoryMany<sf::Uint16>(8u))) {
 							char pas[8];
 							const char* pas_raw = pack.read<char>(8);
@@ -153,11 +153,11 @@ namespace demonorium
 							}
 						}
 						break;
-					case 1:
+					case 1: //Удаление игрока.
 						if (!m_game_started)
 							m_players.erase(iterator);
 						break;
-					case 2:
+					case 2: //READY
 						if (!m_game_started && m_internal_restart) {
 							iterator->second.ready();
 
@@ -178,7 +178,7 @@ namespace demonorium
 							}
 						}
 						break;
-					case 3:
+					case 3: //Смерть
 						if (m_game_started && iterator->second.alive()) {
 							if (pack.enoughMemory<byte>(4)) {
 								Packet packet(5);
@@ -212,7 +212,7 @@ namespace demonorium
 							}
 						}
 						break;
-					case 4:
+					case 4: //Запрос таблицы
 					{
 						constexpr static byte uint2 = 2;
 						size_t count = 252 / 4;
