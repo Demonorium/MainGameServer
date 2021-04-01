@@ -14,16 +14,22 @@ namespace demonorium
 		static Server server;
 	
 	public:
+		//Начальная инициализация, запуск потока сервера
 		static void init();
-		
-		static void update_port(unsigned port);
-		static const char* get_password();
-		
-		static unsigned current_port();
-		static void restart_game();
-		static void force_restart_game();
-		static void reset();
 
+		//Смена порта приёма сообщний: внимание кладёт сервер
+		static void update_port(unsigned port);
+		//Возвращает текущий пароль
+		static const char* get_password();
+		//Возвращает текущий порт
+		static unsigned current_port();
+		//Перезапускает игру
+		static void restart_game();
+		//Принудительно начинает игру
+		static void force_restart_game();
+		//Полный сброс
+		static void reset();
+		//
 		static auto get_game_start_time();
 		
 		static void terminate();

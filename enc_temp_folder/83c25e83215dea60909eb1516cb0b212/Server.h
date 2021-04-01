@@ -280,7 +280,6 @@ namespace demonorium
 		for (auto& player : m_players) {
 			player.second.gameReset();
 			player.second.ready();
-			send(player.first, player.second.getPort(), 1);
 		}
 		
 	}
