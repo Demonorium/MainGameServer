@@ -14,6 +14,8 @@ namespace demonorium
 		friend class ServerAPI;
 
 		std::chrono::system_clock::time_point m_game_start;
+
+		std::atomic<sf::IpAddress> m_ip_alias;
 		
 		sf::UdpSocket m_output;
 		InputThread m_input_thread;
@@ -85,7 +87,7 @@ namespace demonorium
 
 	inline Server::Server(const char password[9], unsigned short port):
 		m_input_thread(port, 255, 128), m_game_started(false),
-		m_need_restart(false), m_internal_restart(false) {
+		m_need_restart(false), m_internal_restart(false), m_ip_alias(sf::IpAddress(127, 0, 0, 1)) {
 		std::memcpy(m_password, password, 9);
 	}
 
@@ -101,6 +103,9 @@ namespace demonorium
 		if (received_memory != nullptr) {
 			//Cчитывание пакета из буффера и создание вспомогательного объекта
 			PacketPrefix prefix = *static_cast<PacketPrefix*>(received_memory);
+			if (prefix.ip == sf::IpAddress::LocalHost)
+				prefix.ip = m_ip_alias.load();
+			
 			received_memory = memory_shift(received_memory, sizeof(PacketPrefix));
 			Packet pack(received_memory, prefix.size);
 
@@ -221,7 +226,7 @@ namespace demonorium
 
 						packet.write(byte(2));
 						packet.write(byte(0));
-						
+						 
 						for (const auto& bundle : m_players) {
 							if (bundle.second.alive() && bundle.second.isReady()) {
 								packet.write(bundle.first);

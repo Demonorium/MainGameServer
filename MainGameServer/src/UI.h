@@ -20,7 +20,9 @@ namespace demonorium
 		sf::Clock m_delta_clock;
 
 		std::array<char, 32> m_port_input_buffer;
-
+		std::array<char, 8> m_ip0, m_ip1, m_ip2, m_ip3;
+		
+		
 		
 		void processEvents();
 		void screen();
@@ -145,7 +147,51 @@ namespace demonorium
 					
 					ImGui::EndTable();
 				}
+				if (ImGui::BeginTable("IP control", 7, ImGuiTableFlags_BordersOuter)) {
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					if (ImGui::InputText("##1", m_ip0.data(), 4)) {
+						for (char& c : m_ip0)
+							if (!std::isdigit(c) && (c != '\0'))
+								c = '0';
+					}
+					ImGui::TableNextColumn();
+					ImGui::Text(".");
+					ImGui::TableNextColumn();
+					if (ImGui::InputText("##2", m_ip1.data(), 4)) {
+						for (char& c : m_ip1)
+							if (!std::isdigit(c) && (c != '\0'))
+								c = '0';
+					}
+					ImGui::TableNextColumn();
+					ImGui::Text(".");
+					ImGui::TableNextColumn();
+					if (ImGui::InputText("##3", m_ip2.data(), 4)) {
+						for (char& c : m_ip2)
+							if (!std::isdigit(c) && (c != '\0'))
+								c = '0';
+					}
+					ImGui::TableNextColumn();
+					ImGui::Text(".");
+					ImGui::TableNextColumn();
+					if (ImGui::InputText("##4", m_ip3.data(), 4)) {
+						for (char& c : m_ip3)
+							if (!std::isdigit(c) && (c != '\0'))
+								c = '0';
+					}
 
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+
+
+					if (ImGui::Button("Update")) {
+						ServerAPI::set_ip_alias(
+							std::atoi(m_ip0.data()), std::atoi(m_ip1.data()), 
+							std::atoi(m_ip2.data()), std::atoi(m_ip3.data()));
+					}
+
+					ImGui::EndTable();
+				}
 				ImGui::Text((std::string("password: '") + ServerAPI::get_password() + "'").c_str());
 				
 				if (ImGui::Button("START(RESTART) GAME")) {
@@ -181,8 +227,26 @@ namespace demonorium
 		for (auto& ch : m_port_input_buffer)
 			ch = '\0';
 
+		for (auto& ch : m_ip0)
+			ch = '\0';
+		for (auto& ch : m_ip1)
+			ch = '\0';
+		for (auto& ch : m_ip2)
+			ch = '\0';
+		for (auto& ch : m_ip3)
+			ch = '\0';
+		
 		auto temp_string = std::to_string(defaultPort);
+		std::string temp_ip_0 = "127";
+		std::string temp_ip_12 = "0";
+		std::string temp_ip_3 = "1";
+
 		std::memcpy(m_port_input_buffer.data(), temp_string.c_str(), temp_string.size());
+		std::memcpy(m_ip0.data(), temp_ip_0.data(), temp_ip_0.size());
+		std::memcpy(m_ip1.data(), temp_ip_12.data(), temp_ip_12.size());
+		std::memcpy(m_ip2.data(), temp_ip_12.data(), temp_ip_12.size());
+		std::memcpy(m_ip3.data(), temp_ip_3.data(), temp_ip_3.size());
+
 		
 		ImGui::SFML::Init(m_window);
 		if (start)

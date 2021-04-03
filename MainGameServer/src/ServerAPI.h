@@ -19,6 +19,10 @@ namespace demonorium
 
 		//Смена порта приёма сообщний: внимание кладёт сервер
 		static void update_port(unsigned port);
+
+		//Смена IP для 127.0.0.1
+		static void set_ip_alias(byte ip0, byte ip1, byte ip2, byte ip3);
+		
 		//Возвращает текущий пароль
 		static const char* get_password();
 		//Возвращает текущий порт
@@ -45,6 +49,10 @@ namespace demonorium
 
 	inline void ServerAPI::update_port(unsigned port) {
 		server.m_input_thread.setPort(port);
+	}
+
+	inline void ServerAPI::set_ip_alias(byte ip0, byte ip1, byte ip2, byte ip3) {
+		server.m_ip_alias.store(sf::IpAddress(ip0, ip1, ip2, ip3));
 	}
 
 	inline const char* ServerAPI::get_password() {
