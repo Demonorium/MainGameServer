@@ -27,6 +27,11 @@ namespace demonorium
 		bool m_internal_restart;
 		std::atomic<bool> m_launched;
 
+		const std::chrono::milliseconds m_kill_delay;
+		const std::chrono::milliseconds m_normal_die_delay;
+		const std::chrono::milliseconds m_request_delay;
+		
+
 		
 		bool isValidPassword(const char pas[8]) const;
 
@@ -37,7 +42,10 @@ namespace demonorium
 		void send(Packet& pack, sf::IpAddress address, sf::Uint16 port, const T& a, Args&& ... args);
 		void send(Packet& pack, sf::IpAddress address, sf::Uint16 port);
 	public:
-		explicit Server(const char password[9], unsigned short port = 3333);
+		explicit Server(const char password[9], unsigned short port = 3333, 
+			std::chrono::milliseconds kill_delay = 1000ms, 
+			std::chrono::milliseconds normal_die_delay = 2000ms,
+			std::chrono::milliseconds request_delay = 500ms);
 
 		void onInit() override;
 		void onPause() override;
@@ -85,9 +93,15 @@ namespace demonorium
 		return true;
 	}
 
-	inline Server::Server(const char password[9], unsigned short port):
+	inline Server::Server(const char password[9], unsigned short port,
+		std::chrono::milliseconds kill_delay,
+		std::chrono::milliseconds normal_die_delay,
+		std::chrono::milliseconds request_delay):
 		m_input_thread(port, 255, 128), m_game_started(false),
-		m_need_restart(false), m_internal_restart(false), m_ip_alias(sf::IpAddress(127, 0, 0, 1)) {
+		m_need_restart(false), m_internal_restart(false), m_ip_alias(sf::IpAddress(127, 0, 0, 1)),
+		m_kill_delay(kill_delay),
+		m_normal_die_delay(normal_die_delay),
+		m_request_delay(request_delay){
 		std::memcpy(m_password, password, 9);
 	}
 
@@ -140,6 +154,8 @@ namespace demonorium
 					}
 				}
 				else {
+					iterator->second.setLastRequest(std::chrono::system_clock::now());
+					
 					switch (code) {
 					case 0: //Перерегистрация
 						if (!m_game_started && (pack.enoughMemoryMany<sf::Uint16>(8u))) {
@@ -214,30 +230,69 @@ namespace demonorium
 									killer = iterator->first;
 								}
 								iterator->second.kill(killer);
+								iterator->second.acceptKill();
 							}
 						}
 						break;
 					case 4: //Запрос таблицы
 					{
-						size_t count = 252 / 4;
-						byte fcount = 0;
+						if (m_game_started && iterator->second.alive() && iterator->second.isReady()) {
+							size_t count = 252 / 4;
+							byte fcount = 0;
 
-						Packet packet(255);
+							Packet packet(255);
 
-						packet.write(byte(2));
-						packet.write(byte(0));
-						 
-						for (const auto& bundle : m_players) {
-							if (bundle.second.alive() && bundle.second.isReady()) {
-								packet.write(bundle.first);
-								++fcount;
+							packet.write(byte(2));
+							packet.write(byte(0));
+
+							for (const auto& bundle : m_players) {
+								if (bundle.second.alive() && bundle.second.isReady()) {
+									packet.write(bundle.first);
+									++fcount;
+								}
 							}
+							static_cast<byte*>(packet.data())[1] = fcount;
+							send(packet, iterator->first, iterator->second.getPort());
 						}
-						static_cast<byte*>(packet.data())[1] = fcount;
-						send(packet, iterator->first, iterator->second.getPort());
 					}
 					break;
 
+					case 5: //Проверка активности
+					{
+						iterator->second.reset_death_timer();
+					}
+					break;
+					case 6: //Запрос внешнего ip
+					{
+						byte arr[4];
+						memcpy(arr, pack.read(4), 4);
+						sf::IpAddress killer(arr[0], arr[1], arr[2], arr[3]);
+						iterator->second.kill(killer);
+						
+						send(iterator->first, iterator->second.getPort(), 4, iterator->first);
+					}
+					break;
+					case 7: //Запрос внешнего ip
+					{
+						if (m_game_started) {
+							if (pack.enoughMemory<byte>(4)) {
+								byte arr[4];
+
+								memcpy(arr, pack.read(4), 4);
+
+								sf::IpAddress killed(arr[0], arr[1], arr[2], arr[3]);
+								auto killed_player = m_players.find(killed);
+								if (killed_player != m_players.end()) {
+									killed_player->second.kill(iterator->first);
+									send(iterator->first, iterator->second.getPort(), 5, iterator->first);
+								} else {
+									std::cout << "Unknown killed player";
+								}
+							}
+						}
+					}
+					break;
+					
 					default:
 						std::cerr << "Unknown code from " << prefix.ip.toString() << "\n";
 						nopack = true;
@@ -247,6 +302,34 @@ namespace demonorium
 				nopack = true;
 		} else
 			nopack = true;
+
+		if (m_game_started) {
+			for (auto& player_p: m_players) {
+				auto& player = player_p.second;
+				if (player.alive()) {
+					auto current_time = std::chrono::system_clock::now();
+					auto dt = (current_time - player.getLastRequest());
+					if (player.on_death()) {
+						if (dt > m_kill_delay) {
+							player.acceptKill();
+							auto killer = m_players.find(player.getKillerIP());
+							killer->second.incKillCounter();
+						} else if (dt > m_request_delay) {
+							send(player_p.first, player_p.second.getPort(), 5, player_p.first);
+						}
+					}
+					else if (dt > m_normal_die_delay) {
+						player.kill(player_p.first);
+						player.acceptKill();
+					}
+					else if (dt > m_request_delay) {
+						send(player_p.first, player_p.second.getPort(), 5, player_p.first);
+					} 
+				}
+			}
+			
+		}
+
 		
 		if (m_need_restart) {
 			m_internal_restart = true;
@@ -256,7 +339,7 @@ namespace demonorium
 			}
 			m_game_started = false;
 			m_need_restart = false;
-		} else if (nopack)
+		} else if (nopack && !m_game_started)
 			std::this_thread::yield();
 	}
 

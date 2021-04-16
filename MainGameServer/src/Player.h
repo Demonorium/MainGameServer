@@ -18,13 +18,16 @@ namespace demonorium
 		chrono::system_clock::time_point m_die_time;
 		sf::IpAddress m_ki_address;
 		size_t m_kill_count;
+		chrono::system_clock::time_point m_last_request;
 
-		
+		bool m_killed;
 		bool m_ready;
 	public:
 		Player(unsigned short port, std::string name);
 		~Player() = default;
 		
+	
+
 		Player(const Player&) = default;
 		Player& operator =(const Player&) = default;
 
@@ -43,15 +46,28 @@ namespace demonorium
 		
 		const chrono::system_clock::time_point& getDieTime() const;
 		void kill(sf::IpAddress kiAddress);
+		void acceptKill();
 		bool alive() const;
-
+		bool on_death() const;
+		void reset_death_timer();
+			 
+		
 		void ready();
 		void notReady();
 		bool isReady() const;
+
+		void setLastRequest(const chrono::system_clock::time_point& tp)  {
+			m_last_request = tp;
+		}
+		
+		chrono::system_clock::time_point getLastRequest() const {
+			return m_last_request;
+		}
 	};
 
 	inline Player::Player(unsigned short port, std::string name):
-		m_port(port), m_name(std::move(name)){
+		m_port(port), m_name(std::move(name)), m_last_request(std::chrono::system_clock::now()),
+		m_killed(false){
 		gameReset();
 	}
 
@@ -59,6 +75,7 @@ namespace demonorium
 		m_die_time = chrono::system_clock::time_point();
 		m_kill_count = 0;
 		m_ready = false;
+		m_killed = false;
 	}
 
 	inline void Player::incKillCounter() {
@@ -98,8 +115,20 @@ namespace demonorium
 		m_ki_address = std::move(kiAddress);
 	}
 
+	inline void Player::acceptKill() {
+		m_killed = true;
+	}
+
 	inline bool Player::alive() const {
+		return !m_killed;
+	}
+
+	inline bool Player::on_death() const {
 		return m_die_time.time_since_epoch() == chrono::system_clock::duration(NULL);
+	}
+
+	inline void Player::reset_death_timer()  {
+		m_die_time = chrono::system_clock::time_point();
 	}
 
 	inline void Player::ready() {
