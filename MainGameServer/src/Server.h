@@ -503,8 +503,13 @@ namespace demonorium
 						}
 					}
 					else if (dt > m_chrono.kill_delay.count()) {
-						player.kill(player_p.first);
+						if (player.getKillerIP() == sf::IpAddress(0, 0, 0, 0)) {
+							player.kill(player_p.first);
+						}
 						player.acceptKill();
+						
+						auto killer = m_players.find(player.getKillerIP());
+						killer->second.incKillCounter();
 
 						Packet packet(5);
 						packet.write(static_cast<byte>(ServerCodes::DEATH));
