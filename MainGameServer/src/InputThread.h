@@ -7,17 +7,16 @@
 #include <SFML/Network.hpp>
 #include <utility>
 
+#include <DSFML/Aliases.h>
+
+
+DEMONORIUM_ALIASES;
+DEMONORIUM_LOCAL_USE(demonorium::memory::memory_declarations);
+
+
 
 namespace demonorium
 {
-	//Стадартный алиас
-	using byte = sf::Uint8;
-
-	template<class T>
-	constexpr T* memory_shift(T* pointer, size_t shift) noexcept {
-		return reinterpret_cast<void*>(reinterpret_cast<size_t>(pointer) + shift);
-	}
-
 	/**
 	 * \brief Двухстраничный синхронный буффер без блокировок, предназначенный для использования в качестве
 	 * "почтового ящика", универсален, т.к. работает с "сырой" памятью
@@ -106,10 +105,10 @@ namespace demonorium
 	inline void* TwoPageInput::_read() {
 		void* temp;
 		if (m_read) {
-			temp = memory_shift(m_page1,m_output_position * m_block_size);
+			temp = shift(m_page1,m_output_position * m_block_size);
 		}
 		else {
-			temp = memory_shift(m_page2, m_output_position * m_block_size);
+			temp = shift(m_page2, m_output_position * m_block_size);
 		}
 		++m_output_position;
 		return temp;
@@ -161,8 +160,8 @@ namespace demonorium
 				return nullptr;
 		}
 		if (m_page_fill)
-			return memory_shift(m_page1, pos * m_block_size);
-		return memory_shift(m_page2, pos * m_block_size);
+			return shift(m_page1, pos * m_block_size);
+		return shift(m_page2, pos * m_block_size);
 	}
 
 	inline void TwoPageInput::validWrite() {
@@ -200,7 +199,7 @@ namespace demonorium
 			m_memory = m_buffer.write();
 		
 		if (m_memory != nullptr) {
-			void* shifted = memory_shift(m_memory, sizeof(PacketPrefix));
+			void* shifted = shift(m_memory, sizeof(PacketPrefix));
 
 			sf::IpAddress address;
 			size_t		  received;

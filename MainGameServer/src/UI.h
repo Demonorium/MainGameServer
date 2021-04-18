@@ -242,11 +242,10 @@ namespace demonorium
 		std::string temp_ip_3 = "1";
 
 		std::memcpy(m_port_input_buffer.data(), temp_string.c_str(), temp_string.size());
-		std::memcpy(m_ip0.data(), temp_ip_0.data(), temp_ip_0.size());
-		std::memcpy(m_ip1.data(), temp_ip_12.data(), temp_ip_12.size());
-		std::memcpy(m_ip2.data(), temp_ip_12.data(), temp_ip_12.size());
-		std::memcpy(m_ip3.data(), temp_ip_3.data(), temp_ip_3.size());
-
+		std::memcpy(m_ip0.data(), temp_ip_0.data(),		temp_ip_0.size());
+		std::memcpy(m_ip1.data(), temp_ip_12.data(),	temp_ip_12.size());
+		std::memcpy(m_ip2.data(), temp_ip_12.data(),	temp_ip_12.size());
+		std::memcpy(m_ip3.data(), temp_ip_3.data(),		temp_ip_3.size());
 		
 		ImGui::SFML::Init(m_window);
 		if (start)
