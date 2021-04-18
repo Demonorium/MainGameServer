@@ -33,7 +33,6 @@ namespace demonorium
 		static void force_restart_game();
 		//Полный сброс
 		static void reset();
-		//
 		static auto get_game_start_time();
 		
 		static void terminate();
@@ -52,11 +51,11 @@ namespace demonorium
 	}
 
 	inline void ServerAPI::set_ip_alias(byte ip0, byte ip1, byte ip2, byte ip3) {
-		server.m_ip_alias.store(sf::IpAddress(ip0, ip1, ip2, ip3));
+		server.m_host.alias.store(sf::IpAddress(ip0, ip1, ip2, ip3));
 	}
 
 	inline const char* ServerAPI::get_password() {
-		return server.m_password;
+		return server.m_password.password;
 	}
 
 	inline unsigned ServerAPI::current_port() {
@@ -78,7 +77,7 @@ namespace demonorium
 	}
 
 	inline auto ServerAPI::get_game_start_time() {
-		return server.m_game_start;
+		return server.m_chrono.game_start;
 	}
 
 	inline void ServerAPI::terminate() {

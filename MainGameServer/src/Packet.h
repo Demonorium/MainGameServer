@@ -3,22 +3,25 @@
 #include <SFML/Network.hpp>
 #include <assert.h>
 #include <memory.h>
+#include <DSFML\Aliases.h>
+
+DEMONORIUM_ALIASES;
+DEMONORIUM_LOCAL_USE(demonorium::memory::memory_declarations);
 
 
 namespace demonorium
 {
-	
 	/**
 	 * \brief Класс предназначен для представления отправляемых и получаемых данных, умеет читать данные разных типов
 	 * Имеется перегрузка для sf::IpAddress
 	 */
 	class Packet {
-		void* m_memory;
-		bool m_control;
-		size_t m_size;
+		void*	m_memory;
+		bool	m_control;
+		size_t	m_size;
 
-		void* m_io_pos;
-		size_t m_io_offset;
+		void*	m_io_pos;
+		size_t	m_io_offset;
 	public:
 		//Конструирует пакет на основе данных, пакет содержит УКАЗАТЕЛЬ на эти данные И НЕУПРАВЛЯЕТ их жизнью
 		Packet(void* received, size_t size);
@@ -43,7 +46,7 @@ namespace demonorium
 		//Считать сырую память размера len
 		const void* read(size_t len = 0);
 
-		//Записать адресс в порядке 1 2 3 4 байты
+		//Записать адрес в порядке 1 2 3 4 байты
 		void write(sf::IpAddress address);
 
 		//Записать объект
@@ -73,7 +76,7 @@ namespace demonorium
 		const T* reference = static_cast<T*>(m_io_pos);
 
 		m_io_offset += count*sizeof(T);
-		m_io_pos = reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + count*sizeof(T));
+		m_io_pos = shift(m_io_pos, count*sizeof(T));
 		
 		return reference;
 	}
@@ -89,7 +92,7 @@ namespace demonorium
 		assert(enoughMemory<T>(count));
 		m_io_offset += count * sizeof(T);
 		std::memcpy(m_io_pos, object, sizeof(T) * count);
-		m_io_pos = reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + count * sizeof(T));
+		m_io_pos = shift(m_io_pos, count * sizeof(T));
 	}
 
 	template <class T>
@@ -111,7 +114,7 @@ namespace demonorium
 	
 	template <class T, class ... Args>
 	bool Packet::enoughMemoryMany(size_t current) const {
-		return (current + sizeof(T) + sum(sizeof(Args) ...));
+		return (current + sizeof(T) + sum(sizeof(Args) ...)) <= m_size;
 	}
 
 
@@ -156,7 +159,7 @@ namespace demonorium
 		const void* reference = m_io_pos;
 
 		m_io_offset += len;
-		m_io_pos = reinterpret_cast<void*>(reinterpret_cast<size_t>(m_io_pos) + len);
+		m_io_pos = shift(m_io_pos, len);
 
 		return reference;
 	}
