@@ -121,8 +121,8 @@ namespace demonorium
 		void send(Packet& pack, sf::IpAddress address, sf::Uint16 port);
 	public:
 		explicit Server(const char password[9], unsigned short port = 3333, 
-			Chrono::crdelay kill		= 10s,
-			Chrono::crdelay inactive	= 20s,
+			Chrono::crdelay kill		= 20s,
+			Chrono::crdelay inactive	= 35s,
 			Chrono::crdelay warning		= 1s);
 
 		void onInit() override;
