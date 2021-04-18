@@ -438,8 +438,10 @@ namespace demonorium
 
 								auto killed_player = m_players.find(killed);
 								if (killed_player != m_players.end()) {
-									killed_player->second.kill(player_ip);
-									send(player_ip, player.getPort(), ServerCodes::RESP_CHECK);
+									if (killed_player->second.isReady() && killed_player->second.alive()) {
+										killed_player->second.kill(player_ip);
+										send(player_ip, player.getPort(), ServerCodes::RESP_CHECK);
+									}
 								} else {
 									std::cout << "Unknown killed player";
 								}
@@ -497,8 +499,8 @@ namespace demonorium
 						else if (dt > m_chrono.warning_delay.count()) {
 							auto dt2 = std::chrono::duration_cast<Chrono::delay>(current_time - player.getLastWarning().time_since_epoch()).count();
 							if (dt2 > m_chrono.warning_delay.count()) {
-								player.updateLastWarning();
 								send(player_p.first, player_p.second.getPort(), ServerCodes::RESP_CHECK);
+								player.updateLastWarning();
 							}
 						}
 					}
