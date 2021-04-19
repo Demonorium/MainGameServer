@@ -268,7 +268,7 @@ namespace demonorium
 
 			for (auto& player : m_players) {
 				player.second.setDefaultState();
-				send(player.first, player.second.getPort(), ServerCodes::RESP_CHECK);
+				send(player.first, player.second.getPort(), ServerCodes::READY_REQ);
 			}
 		}
 		
