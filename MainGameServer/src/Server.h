@@ -465,6 +465,7 @@ namespace demonorium
 				auto dt = current_time - player.getLastRequest();
 				//Переодически опрашиваем всех игроков
 				if (dt > m_chrono.warning_delay) {
+					player.updateLastWarning();
 					send(bundle.first, player.getPort(), ServerCodes::READY_REQ);
 				}
 			}
