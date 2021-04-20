@@ -12,32 +12,33 @@ namespace demonorium
 	class ServerAPI {
 		friend class Server;
 		static Server server;
-	
 	public:
 		//Начальная инициализация, запуск потока сервера
 		static void init();
-
+		//Остановка исполнения
+		static void terminate();
+		//Возвращает true когда сервер окончательно запущен
+		static bool is_launched();
+		
 		//Смена порта приёма сообщний: внимание кладёт сервер
-		static void update_port(unsigned port);
-
+		static void update_port(sf::Uint16 port);
+		//Возвращает текущий порт
+		static sf::Uint16 get_port();
+		
 		//Смена IP для 127.0.0.1
 		static void set_ip_alias(byte ip0, byte ip1, byte ip2, byte ip3);
 		
 		//Возвращает текущий пароль
 		static const char* get_password();
-		//Возвращает текущий порт
-		static unsigned current_port();
-		//Перезапускает игру
-		static void restart_game();
-		//Принудительно начинает игру
-		static void force_restart_game();
-		//Полный сброс
-		static void reset();
+
+		//Возвращает время начала последней игры
 		static auto get_game_start_time();
 		
-		static void terminate();
-		static const auto& getPlayerList();
-		static bool is_launched();
+		//Возвращает std::map содержащий всех игроков по их ip
+		static const auto& get_player_list();
+		
+		//Запрашивает указнное действие у сервера
+		static void request(UserRequest request);
 	};
 
 
@@ -46,7 +47,7 @@ namespace demonorium
 		server.start();
 	}
 
-	inline void ServerAPI::update_port(unsigned port) {
+	inline void ServerAPI::update_port(sf::Uint16 port) {
 		server.m_input_thread.setPort(port);
 	}
 
@@ -58,22 +59,8 @@ namespace demonorium
 		return server.m_password.password;
 	}
 
-	inline unsigned ServerAPI::current_port() {
+	inline sf::Uint16 ServerAPI::get_port() {
 		return server.m_input_thread.getPort();
-	}
-
-	inline void ServerAPI::restart_game() {
-		server.restartGame();
-	}
-
-	inline void ServerAPI::force_restart_game() {
-		server.forceRestart();
-	}
-
-	inline void ServerAPI::reset() {
-		server.destroyThread();
-		server.m_players.clear();
-		server.start();
 	}
 
 	inline auto ServerAPI::get_game_start_time() {
@@ -84,11 +71,15 @@ namespace demonorium
 		server.destroyThread();
 	}
 
-	inline const auto& ServerAPI::getPlayerList() {
+	inline const auto& ServerAPI::get_player_list() {
 		return server.m_players;
 	}
 
 	inline bool ServerAPI::is_launched() {
 		return server.m_launched.load();
+	}
+
+	inline void ServerAPI::request(UserRequest request) {
+		server.request(request);
 	}
 }

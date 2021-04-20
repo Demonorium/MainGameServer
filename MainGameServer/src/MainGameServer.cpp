@@ -1,4 +1,5 @@
-﻿#include "UI.h"
+﻿#define _CRT_SECURE_NO_WARNINGS
+#include "UI.h"
 #include "ServerAPI.h"
 
 demonorium::Server demonorium::ServerAPI::server("valid cd",3333);

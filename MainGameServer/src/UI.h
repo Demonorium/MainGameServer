@@ -21,12 +21,15 @@ namespace demonorium
 
 		std::array<char, 32> m_port_input_buffer;
 		std::array<char, 8> m_ip0, m_ip1, m_ip2, m_ip3;
-		
-		
-		
+
 		void processEvents();
 		void screen();
 		void guiRender();
+
+		void draw_player_list();
+		void draw_port_control();
+		void draw_ip_control();
+		void draw_buttons();
 	public:
 		Window(ImGuiWindowFlags flags, unsigned short defaultPort, bool start = false);
 		~Window();
@@ -63,148 +66,15 @@ namespace demonorium
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				
+				draw_player_list();
 				
-				if (ImGui::BeginListBox("Player List", { static_cast<float>(m_window.getSize().x / 2), static_cast<float>(m_window.getSize().y * 0.9)  })) {
-					if (ImGui::BeginTable("Players", 6, ImGuiTableFlags_Borders)) {
-						ImGui::TableNextRow();
-						ImGui::TableNextColumn();
-						ImGui::Text("IP");
-						
-						ImGui::TableNextColumn();
-						ImGui::Text("NAME");
-
-						ImGui::TableNextColumn();
-						ImGui::Text("READY");
-						
-
-						ImGui::TableNextColumn();
-						ImGui::Text("KILLS");
-
-						ImGui::TableNextColumn();
-						ImGui::Text("D-TIME");
-						
-						ImGui::TableNextColumn();
-						ImGui::Text("KILLED BY");
-
-						
-						ImGui::TableNextRow();
-						std::string UI_NAME = "Port control";
-						int i = 0;
-						
-						for (const auto& bundle : ServerAPI::getPlayerList()) {
-							ImGui::TableNextColumn();
-							ImGui::Text( bundle.first.toString().c_str());
-
-							ImGui::TableNextColumn();
-							ImGui::Text(bundle.second.getName().c_str());
-
-							ImGui::TableNextColumn();
-							ImGui::Text(bundle.second.isReady() ? C_YES : C_NO);
-
-							ImGui::TableNextColumn();
-							ImGui::Text(std::to_string(bundle.second.getKillCounter()).c_str());
-
-							if (!bundle.second.alive()) {
-								ImGui::TableNextColumn();
-								ImGui::Text(std::to_string(std::chrono::duration_cast<chrono::seconds>(bundle.second.getDieTime() - ServerAPI::get_game_start_time()).count()).c_str());
-								
-								ImGui::TableNextColumn();
-								ImGui::Text(bundle.second.getKillerIP().toString().c_str());
-							}
-							
-							
-							
-							ImGui::TableNextRow();
-							++i;
-						}
-						ImGui::EndTable();
-					}
-					
-					ImGui::EndListBox();
-				}
-
-
 				ImGui::TableNextColumn();
-				if (ImGui::BeginTable("Port control", 2, ImGuiTableFlags_BordersOuter)) {
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					if (ImGui::InputText("Port", m_port_input_buffer.data(), 8)) {
-						for (char& c : m_port_input_buffer)
-							if (!std::isdigit(c) && (c != '\0'))
-								c = '0';
-								
-					}
-					ImGui::TableNextColumn();
-					ImGui::Text("Current: %i", ServerAPI::current_port());
-					
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
 
-					
-					if (ImGui::Button("Update")) {
-						ServerAPI::update_port(std::atoi(m_port_input_buffer.data()));
-					}
-					
-					ImGui::EndTable();
-				}
-				if (ImGui::BeginTable("IP control", 7, ImGuiTableFlags_BordersOuter)) {
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-					if (ImGui::InputText("##1", m_ip0.data(), 4)) {
-						for (char& c : m_ip0)
-							if (!std::isdigit(c) && (c != '\0'))
-								c = '0';
-					}
-					ImGui::TableNextColumn();
-					ImGui::Text(".");
-					ImGui::TableNextColumn();
-					if (ImGui::InputText("##2", m_ip1.data(), 4)) {
-						for (char& c : m_ip1)
-							if (!std::isdigit(c) && (c != '\0'))
-								c = '0';
-					}
-					ImGui::TableNextColumn();
-					ImGui::Text(".");
-					ImGui::TableNextColumn();
-					if (ImGui::InputText("##3", m_ip2.data(), 4)) {
-						for (char& c : m_ip2)
-							if (!std::isdigit(c) && (c != '\0'))
-								c = '0';
-					}
-					ImGui::TableNextColumn();
-					ImGui::Text(".");
-					ImGui::TableNextColumn();
-					if (ImGui::InputText("##4", m_ip3.data(), 4)) {
-						for (char& c : m_ip3)
-							if (!std::isdigit(c) && (c != '\0'))
-								c = '0';
-					}
-
-					ImGui::TableNextRow();
-					ImGui::TableNextColumn();
-
-
-					if (ImGui::Button("Update")) {
-						ServerAPI::set_ip_alias(
-							std::atoi(m_ip0.data()), std::atoi(m_ip1.data()), 
-							std::atoi(m_ip2.data()), std::atoi(m_ip3.data()));
-					}
-
-					ImGui::EndTable();
-				}
+				draw_port_control();
+				draw_ip_control();
 				ImGui::Text((std::string("password: '") + ServerAPI::get_password() + "'").c_str());
-				
-				if (ImGui::Button("START(RESTART) GAME")) {
-					ServerAPI::restart_game();
-				}
-				if (ImGui::Button("FORCE START(RESTART)")) {
-					ServerAPI::force_restart_game();
-				}
-				
-				if (ImGui::Button("CLEAR PLAYER LIST")) {
-					ServerAPI::reset();
-				}
-				
+
+				draw_buttons();
 				
 				ImGui::TableNextRow();
 				ImGui::EndTable();
@@ -218,6 +88,156 @@ namespace demonorium
 		m_window.clear();
 		ImGui::SFML::Render(m_window);
 		m_window.display();
+	}
+
+	inline void Window::draw_player_list() {
+		if (ImGui::BeginListBox("Player List", { static_cast<float>(m_window.getSize().x / 2), static_cast<float>(m_window.getSize().y * 0.9) })) {
+			if (ImGui::BeginTable("Players", 6, ImGuiTableFlags_Borders)) {
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::Text("IP");
+
+				ImGui::TableNextColumn();
+				ImGui::Text("NAME");
+
+				ImGui::TableNextColumn();
+				ImGui::Text("READY");
+
+
+				ImGui::TableNextColumn();
+				ImGui::Text("KILLS");
+
+				ImGui::TableNextColumn();
+				ImGui::Text("D-TIME");
+
+				ImGui::TableNextColumn();
+				ImGui::Text("KILLED BY");
+
+
+				ImGui::TableNextRow();
+				std::string UI_NAME = "Port control";
+				int i = 0;
+
+				for (const auto& bundle : ServerAPI::get_player_list()) {
+					ImGui::TableNextColumn();
+					ImGui::Text(bundle.first.toString().c_str());
+
+					ImGui::TableNextColumn();
+					ImGui::Text(bundle.second.getName().c_str());
+
+					ImGui::TableNextColumn();
+					ImGui::Text(bundle.second.isReady() ? C_YES : C_NO);
+
+					ImGui::TableNextColumn();
+					ImGui::Text(std::to_string(bundle.second.getKillCounter()).c_str());
+
+					if (!bundle.second.alive()) {
+						ImGui::TableNextColumn();
+						ImGui::Text(std::to_string(std::chrono::duration_cast<chrono::seconds>(bundle.second.getDieTime() - ServerAPI::get_game_start_time()).count()).c_str());
+
+						ImGui::TableNextColumn();
+						ImGui::Text(bundle.second.getKillerIP().toString().c_str());
+					}
+
+					ImGui::TableNextRow();
+					++i;
+				}
+				ImGui::EndTable();
+			}
+
+			ImGui::EndListBox();
+		}
+	}
+
+	inline void Window::draw_port_control() {
+		if (ImGui::BeginTable("Port control", 2, ImGuiTableFlags_BordersOuter)) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			if (ImGui::InputText("Port", m_port_input_buffer.data(), 8)) {
+				for (char& c : m_port_input_buffer)
+					if (!std::isdigit(c) && (c != '\0'))
+						c = '0';
+
+			}
+			ImGui::TableNextColumn();
+			ImGui::Text("Current: %i", ServerAPI::get_port());
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+
+
+			if (ImGui::Button("Update")) {
+				ServerAPI::update_port(std::atoi(m_port_input_buffer.data()));
+			}
+
+			ImGui::EndTable();
+		}
+	}
+
+	inline void Window::draw_ip_control() {
+		if (ImGui::BeginTable("IP control", 7, ImGuiTableFlags_BordersOuter)) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			if (ImGui::InputText("##1", m_ip0.data(), 4)) {
+				for (char& c : m_ip0)
+					if (!std::isdigit(c) && (c != '\0'))
+						c = '0';
+			}
+			ImGui::TableNextColumn();
+			ImGui::Text(".");
+			ImGui::TableNextColumn();
+			if (ImGui::InputText("##2", m_ip1.data(), 4)) {
+				for (char& c : m_ip1)
+					if (!std::isdigit(c) && (c != '\0'))
+						c = '0';
+			}
+			ImGui::TableNextColumn();
+			ImGui::Text(".");
+			ImGui::TableNextColumn();
+			if (ImGui::InputText("##3", m_ip2.data(), 4)) {
+				for (char& c : m_ip2)
+					if (!std::isdigit(c) && (c != '\0'))
+						c = '0';
+			}
+			ImGui::TableNextColumn();
+			ImGui::Text(".");
+			ImGui::TableNextColumn();
+			if (ImGui::InputText("##4", m_ip3.data(), 4)) {
+				for (char& c : m_ip3)
+					if (!std::isdigit(c) && (c != '\0'))
+						c = '0';
+			}
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+
+
+			if (ImGui::Button("Update")) {
+				ServerAPI::set_ip_alias(
+					std::atoi(m_ip0.data()), std::atoi(m_ip1.data()),
+					std::atoi(m_ip2.data()), std::atoi(m_ip3.data()));
+			}
+
+			ImGui::EndTable();
+		}
+	}
+
+	inline void Window::draw_buttons() {
+		if (ImGui::Button("START(RESTART) GAME")) {
+			ServerAPI::request(UserRequest::START_GAME);
+		}
+		if (ImGui::Button("STOP GAME")) {
+			ServerAPI::request(UserRequest::END_GAME);
+		}
+		if (ImGui::Button("FORCE START(RESTART)")) {
+			ServerAPI::request(UserRequest::FORCE_START);
+		}
+		if (ImGui::Button("FORCE START(RESTART) (ready only)")) {
+			ServerAPI::request(UserRequest::FORCE_ESTART);
+		}
+		if (ImGui::Button("RESET")) {
+			ServerAPI::request(UserRequest::CLEAR);
+		}
 	}
 
 	inline Window::Window(ImGuiWindowFlags flags, unsigned short defaultPort, bool start):

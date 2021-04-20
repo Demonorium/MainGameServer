@@ -3,6 +3,8 @@
 #include <chrono>
 #include <SFML/Network.hpp>
 
+#include "Log.h"
+
 
 namespace demonorium
 {
@@ -42,12 +44,13 @@ namespace demonorium
 		Life			m_life;
 		sf::Uint16		m_port;
 		size_t			m_kill_count;
+		Log				m_log;
 	public:
-		Player(sf::Uint16 port, std::string name);
+		Player(sf::Uint16 port, std::string name, sf::IpAddress ip);
 		~Player() = default;
 
-		Player(const Player&) = default;
-		Player& operator =(const Player&) = default;
+		Player(Player&& other);
+		Player& operator =(Player&&) = default;
 
 		//Игрок готов к началу игры
 		bool isReady() const;
@@ -75,7 +78,9 @@ namespace demonorium
 		bool alive() const;
 		bool on_death() const;
 		void reset_death();
-			 
+		void resurrection();
+		
+		
 		void updateLastRequest();
 		PlayerTimeInfo::point getLastRequest() const;
 
@@ -105,17 +110,32 @@ namespace demonorium
 		set_default();
 	}
 
-	inline Player::Player(sf::Uint16 port, std::string name):
+	inline Player::Player(sf::Uint16 port, std::string name, sf::IpAddress logip):
 		m_port(port), m_name(std::move(name)), m_kill_count(0) {
+		m_log.open("player_" + logip.toString() + ".log");
+		
+		m_log.write_important("Создание сущности игрока с именем: ", name, "; port: ", port);
+	}
+
+	inline Player::Player(Player&& other) :
+		m_log(std::move(other.m_log)),
+		m_name(std::move(other.m_name)),
+		m_port(std::move(other.m_port)),
+		m_kill_count(std::move(other.m_kill_count)),
+		m_life(other.m_life),
+		m_time(other.m_time) {
 	}
 
 	inline void Player::setDefaultState() {
 		m_time.set_default();
 		m_life.set_default();
 		m_kill_count = 0;
+
+		m_log.write_important("Сброс внутренного состояния");
 	}
 
 	inline void Player::incKillCounter() {
+		m_log.write("Регистрация убийства");
 		++m_kill_count;
 	}
 
@@ -128,11 +148,17 @@ namespace demonorium
 	}
 
 	inline void Player::setName(std::string newName) {
-		m_name = std::move(newName);
+		if (m_name != newName) {
+			m_log.write("Смена имени: \"", m_name, "\" -> \"", newName, '"');
+			m_name = std::move(newName);
+		}
 	}
 
 	inline void Player::setPort(sf::Uint16 port) {
-		m_port = port;
+		if (m_port != port) {
+			m_log.write("Смена порта: \"", m_port, "\" -> \"", port, '"');
+			m_port = port;
+		}
 	}
 
 	inline sf::Uint16 Player::getPort() const {
@@ -148,11 +174,15 @@ namespace demonorium
 	}
 
 	inline void Player::kill(sf::IpAddress kiAddress) {
+		m_log.write("Зафиксирована попытка убийства: игроком ", kiAddress.toString());
+
 		m_time.die_time = PlayerTimeInfo::clock::now();
 		m_life.killer = kiAddress;
+		m_life.killed = true;
 	}
 
 	inline void Player::acceptKill() {
+		m_log.write_important("СМЕРТЬ!");
 		m_life.alive = false;
 	}
 
@@ -164,13 +194,20 @@ namespace demonorium
 		return m_life.killed;
 	}
 
-	inline void Player::reset_death()  {
+	inline void Player::reset_death() {
+		m_log.write("Попытка убийства отменена");
 		m_life.killed = false;
 	}
 
+	inline void Player::resurrection() {
+		m_log.write("Воскрешение");
+		m_life.alive = true;
+	}
+
 	inline void Player::updateLastRequest() {
+		if (!on_death())
+			updateLastWarning();
 		m_time.last_request = PlayerTimeInfo::clock::now();
-		updateLastWarning();
 	}
 
 	inline PlayerTimeInfo::point Player::getLastRequest() const {
@@ -186,6 +223,7 @@ namespace demonorium
 	}
 
 	inline void Player::ready() {
+		m_log.write("Игрок готов к игре");
 		m_life.ready = true;
 	}
 

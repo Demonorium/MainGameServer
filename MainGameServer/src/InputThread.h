@@ -38,7 +38,6 @@ namespace demonorium
 	public:
 		TwoPageInput(size_t blockSize, byte blockCount);
 		~TwoPageInput();
-
 		
 		/**
 		 * \brief —читать объект из буффера.
@@ -94,7 +93,7 @@ namespace demonorium
 		InputThread(unsigned short port, size_t packetSize, byte packetCount, size_t defencePacketCount = 6, std::chrono::milliseconds defenceDuration = 500ms);
 		~InputThread() override = default;
 
-		void setPort(unsigned short port);
+		void setPort(sf::Uint16 port);
 		unsigned short getPort() const;
 
 		inline void* get();
@@ -226,7 +225,7 @@ namespace demonorium
 		m_memory(nullptr), m_port(port) {
 	}
 
-	inline void InputThread::setPort(unsigned short port) {
+	inline void InputThread::setPort(sf::Uint16 port) {
 		if (isRunning())
 			pause();
 		while (!isRealyPaused() && containsThread());
