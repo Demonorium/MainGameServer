@@ -243,7 +243,8 @@ namespace demonorium
 	inline Window::Window(ImGuiWindowFlags flags, unsigned short defaultPort, bool start):
 		m_window(sf::VideoMode(1024, 640), "Game server UI"),
 		m_flags(flags) {
-
+		m_window.setFramerateLimit(60);
+		
 		for (auto& ch : m_port_input_buffer)
 			ch = '\0';
 
