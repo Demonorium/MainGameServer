@@ -535,12 +535,14 @@ namespace demonorium
 	inline void Server::sendReadyRequest(const Chrono::time_point& current_time) {
 		for (auto& bundle : m_players) {
 			auto& player = bundle.second;
-			auto dt = current_time - player.getLastWarning();
-			//Переодически опрашиваем всех игроков
-			if (dt > m_chrono.warning_delay) {
-				player.updateLastWarning();
-				response(bundle.first, player.getPort(), ServerCodes::READY_REQ);
-				m_log.write("Запрос готовности: ", player.getName(), " : ", bundle.first.toString());
+			if (!player.isReady()) {
+				auto dt = current_time - player.getLastWarning();
+				//Переодически опрашиваем всех игроков
+				if (dt > m_chrono.warning_delay) {
+					player.updateLastWarning();
+					response(bundle.first, player.getPort(), ServerCodes::READY_REQ);
+					m_log.write("Запрос готовности: ", player.getName(), " : ", bundle.first.toString());
+				}
 			}
 		}
 	}
