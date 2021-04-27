@@ -50,7 +50,11 @@ namespace demonorium
 		 * \return Указатель на память в которой можно конструировать объекты
 		 */
 		void* write();
-		
+
+
+		/**
+		 * \brief  Завершает ввод данных в буфер
+		 */
 		void validWrite();
 		size_t getBlockSize() const;
 	};
@@ -153,6 +157,7 @@ namespace demonorium
 		if (pos == m_block_count) {
 			if (m_page_free) {
 				m_page_free.store(false);
+				m_input_position.store(0);
 				m_page_fill = !m_page_fill;
 			}
 			else
